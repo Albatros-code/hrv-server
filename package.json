@@ -9,6 +9,9 @@
     "build_client": "cd ../hrv-ui && yarn build",
     "update_client": "cp -r ../hrv-ui/build ./build"
   },
+  "engines": {
+    "node": "16.x"
+  },
   "dependencies": {
     "busboy": "^1.4.0",
     "express": "^4.17.2"
