@@ -2,6 +2,7 @@ from sklearn.linear_model import LinearRegression
 import csv
 import fitparse
 import json
+import sys
 from plotnine import *
 
 import numpy as np
@@ -10,7 +11,7 @@ import seaborn as sn
 import matplotlib.pyplot as plt
 import math
 
-fit_file = fitparse.FitFile('./uploads/2022-01-27-12-16-30.fit')
+fit_file = fitparse.FitFile('./uploads/{}'.format(sys.argv[1]))
 
 # load RR intervals from the fit file
 # RRs = []

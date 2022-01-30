@@ -5,9 +5,12 @@
   "author": "albatros",
   "license": "MIT",
   "scripts": {
-    "start": "nodemon index.js",
+    "start": "NODE_ENV=development nodemon index.js",
     "build_client": "cd ../hrv-ui && yarn build",
-    "update_client": "cp -r ../hrv-ui/build ./build"
+    "update_client": "cp -r ../hrv-ui/build ./build",
+    "add_build": "awk '!/build/' .gitignore > temp && mv temp .gitignore",
+    "deploy": "yarn build_client && cd ../hrv-server && yarn deploy_no_build",
+    "deploy_no_build": "yarn update_client && git branch -D deploy &>/dev/null && git checkout -b deploy && yarn add_build && git add . && git commit -m 'Update' && git push heroku deploy:master -f && git checkout master && git branch -D deploy"
   },
   "engines": {
     "node": "16.x"
