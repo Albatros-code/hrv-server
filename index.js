@@ -44,7 +44,7 @@ app.post('/calculate-hrv', (req, res) => {
             const venv = path.join(__dirname, '.venv/bin/python3')
             const prodVenv = 'python'
             console.log('Starting python script')
-            const python = spawn(process.env.NODE_ENV === 'development' ? venv : prodVenv, ['scripts/script.py', filename]);
+            const python = spawn(process.env.NODE_ENV === 'development' ? venv : prodVenv, ['scripts/script.py', saveTo]);
             // collect data from script
             python.stdout.on('data', (data) => {
                 console.log('Pipe data from python script ...');

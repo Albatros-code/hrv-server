@@ -10,8 +10,9 @@ import pandas as pd
 import seaborn as sn
 import matplotlib.pyplot as plt
 import math
+import argparse
+from pathlib import Path
 
-fit_file = fitparse.FitFile('./uploads/{}'.format(sys.argv[1]))
 
 # load RR intervals from the fit file
 # RRs = []
@@ -91,14 +92,13 @@ def DFA(pp_values, lower_scale_limit, upper_scale_limit):
     return alpha
 
 
-def computeFeatures(df, x):
+def computeFeatures(df, x, step, window):
     features = []
-    step = 120
     # for index in range(3, 13):
     for index in range(0, int(round(np.max(x)/step))):
 
         array_rr = df.loc[(df['timestamp'] >= (index*step))
-                          & (df['timestamp'] <= (index+1)*step), 'RR']*1000
+                          & (df['timestamp'] <= (index*step) + window), 'RR']*1000
         # compute heart rate
         heartrate = round(60000/np.mean(array_rr), 2)
         # compute rmssd
@@ -123,7 +123,7 @@ def computeFeatures(df, x):
     return features_df
 
 
-def calculate(fit_file):
+def calculate(fit_file, step, window):
     RRs = []
     for record in fit_file.get_messages('hrv'):
         for record_data in record:
@@ -143,7 +143,7 @@ def calculate(fit_file):
     df['timestamp'] = x
     df['RR'] = filtered_RRs
 
-    features_df = computeFeatures(df, x)
+    features_df = computeFeatures(df, x, step, window)
     features_df.head()
     # Update #1: clean up and color coding
     threshold_sdnn = 10  # rather arbitrary, based on visual inspection of the data
@@ -155,22 +155,25 @@ def calculate(fit_file):
     return {"df": features_df_filtered, "hrv_avg": average_alfa1}
 
 
-# heart_rate = get_data(fit_file, 'heart_rate')
-# timestamp = get_data(fit_file, 'timestamp')
-result = calculate(fit_file)
-# data = {
-#     "timestamp": [x.isoformat() for x in timestamp if True],
-#     "heart_rate": heart_rate,
-# "hrv": hrv["hrv"],
-# "hrv_avg": hrv["hrv_avg"],
-# }
-parsed_data = [{"time": x[0], "hr": round(np.mean(x[1]), 0), "alfa1": round(np.mean(x[4]), 2)}
-               for x in result['df'].values.tolist() if True]
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('fit_file', type=Path)
+    parser.add_argument('--step', type=int, default=120)
+    parser.add_argument('--window', type=int, default=120)
+    args = parser.parse_args()
 
-res = {
-    "results": parsed_data,
-    "hrv_avg": result['hrv_avg']
-}
+    result = calculate(fitparse.FitFile(str(args.fit_file)), args.step, args.window)
 
-print(json.dumps(res))
-# print(data)
+    parsed_data = [{"time": x[0], "hr": round(np.mean(x[1]), 0), "alfa1": round(np.mean(x[4]), 2)}
+				   for x in result['df'].values.tolist() if True]
+
+    res = {
+		"results": parsed_data,
+		"hrv_avg": result['hrv_avg']
+	}
+
+    print(json.dumps(res))
+
+
+if __name__=="__main__":
+    main()
