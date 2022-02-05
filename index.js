@@ -30,44 +30,49 @@ app.post('/calculate-hrv', (req, res) => {
     const bb = busboy({ headers: req.headers })
 
     let dataToSend
+    let parameters
+    let saveTo
 
+    bb.on('field', (name, val, info) => {
+        console.log(`Field [${name}]: value: %j`, JSON.parse(val))
+        parameters = JSON.parse(val)
+    });
     bb.on('file', (name, file, info) => {
         const { filename, encoding, mimeType } = info;
 
-        const saveTo = path.join(__dirname, 'uploads/' + filename)
+        saveTo = path.join(__dirname, 'uploads/' + filename)
         const saveFile = fs.createWriteStream(saveTo)
         file.pipe(saveFile);
 
         saveFile.on('close', () => {
             console.log('File saved')
-            // spawn new child process to call the python script
-            const venv = path.join(__dirname, '.venv/bin/python3')
-            const prodVenv = 'python'
-            console.log('Starting python script')
-            const python = spawn(process.env.NODE_ENV === 'development' ? venv : prodVenv, ['scripts/script.py', saveTo]);
-            // collect data from script
-            python.stdout.on('data', (data) => {
-                console.log('Pipe data from python script ...');
-                dataToSend = data.toString();
-            });
 
-            python.stderr.on('data', (data) => {
-                console.log(data.toString())
-            });
-            // in close event we are sure that stream from child process is closed
-            python.on('close', (code) => {
-                console.log(`child process close all stdio with code ${code}`);
-                res.send(dataToSend);
-                fs.rm(saveTo, () => { console.log("Removing" + saveTo) })
-                // send data to browser
-            });
         })
 
     });
 
     bb.on('close', () => {
-        // res.writeHead(200, { 'Connection': 'close' });
-        // res.send({ msg: `That's all folks!`, dataToSend });
+        // spawn new child process to call the python script
+        const venv = path.join(__dirname, '.venv/bin/python3')
+        const prodVenv = 'python'
+        console.log('Starting python script')
+        const python = spawn(process.env.NODE_ENV === 'development' ? venv : prodVenv, ['scripts/script.py', saveTo, "--step", parameters.step, "--window", parameters.window]);
+        // collect data from script
+        python.stdout.on('data', (data) => {
+            console.log('Pipe data from python script ...');
+            dataToSend = data.toString();
+        });
+
+        python.stderr.on('data', (data) => {
+            console.log(data.toString())
+        });
+        // in close event we are sure that stream from child process is closed
+        python.on('close', (code) => {
+            console.log(`child process close all stdio with code ${code}`);
+            res.send(dataToSend);
+            fs.rm(saveTo, () => { console.log("Removing" + saveTo) })
+            // send data to browser
+        });
     });
     req.pipe(bb);
     return;

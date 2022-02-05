@@ -169,7 +169,9 @@ def main():
 
     res = {
 		"results": parsed_data,
-		"hrv_avg": result['hrv_avg']
+		"hrv_avg": result['hrv_avg'],
+        "step": args.step,
+        "window": args.window,
 	}
 
     print(json.dumps(res))
